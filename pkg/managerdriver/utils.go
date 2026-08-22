@@ -376,7 +376,7 @@ func getProtoForServicePort(log logr.Logger, service *corev1.Service, portName s
 		annotation, ok := service.Annotations[AppProtocolsAnnotation]
 		sourceKey := AppProtocolsAnnotation
 		// LEGACY-PREFIX-MIGRATION: BEGIN (read-side cleanup deletes this fallback)
-		if ok {
+		if !ok {
 			if legacyVal, legacyOK := service.Annotations[LegacyAppProtocolsAnnotation]; legacyOK {
 				annotation = legacyVal
 				sourceKey = LegacyAppProtocolsAnnotation
@@ -391,7 +391,7 @@ func getProtoForServicePort(log logr.Logger, service *corev1.Service, portName s
 			protocolMap := map[string]string{}
 			err := json.Unmarshal([]byte(annotation), &protocolMap)
 			if err != nil {
-				return defaultProtocol, nil
+				return defaultProtocol, fmt.Errorf("could not parse protocol annotation: '%s' from: %s service: %s", annotation, service.Namespace, service.Name)
 			}
 
 			if protocol, ok := protocolMap[portName]; ok {
@@ -405,7 +405,7 @@ func getProtoForServicePort(log logr.Logger, service *corev1.Service, portName s
 				case "TCP":
 					return ir.IRProtocol_TCP, nil
 				case "TLS":
-					return ir.IRProtocol_TCP, nil
+					return ir.IRProtocol_TLS, nil
 				default:
 					log.Error(fmt.Errorf("service uses %q annotation to configure protocols, but a valid entry is missing for portName :%q. defaulting to %s", sourceKey, portName, defaultProtocol), "missing protocol annotation entry for service",
 						"service", fmt.Sprintf("%s.%s", service.Name, service.Namespace),
