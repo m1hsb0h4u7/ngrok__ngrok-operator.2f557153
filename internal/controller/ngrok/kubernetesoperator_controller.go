@@ -322,13 +322,14 @@ func (r *KubernetesOperatorReconciler) updateStatus(ctx context.Context, ko *ngr
 				errMessage = ngrokErr.Msg
 			}
 			if ngrokErr.ErrorCode != "" {
-				errMessage = fmt.Sprintf("%s: %s", errMessage, ngrokErr.ErrorCode)
+				errMessage = fmt.Sprintf("%s: %s", ngrokErr.ErrorCode, errMessage)
 			}
 		}
 
 		// Special case for NotFound errors, we'll clear the ID and URI so we can re-queue the reconciliation
 		if ngrok.IsNotFound(err) {
 			ko.Status.ID = ""
+			ko.Status.URI = ""
 		}
 	}
 
@@ -353,7 +354,7 @@ func (r *KubernetesOperatorReconciler) updateStatus(ctx context.Context, ko *ngr
 		ready = false
 		readyReason = errReason
 		readyMessage = errMessage
-		if existsInNgrokAPI && errors.Is(err, errBindingsConfiguration) {
+		if existsInNgrokAPI || errors.Is(err, errBindingsConfiguration) {
 			readyReason = ngrokv1alpha1.KubernetesOperatorReasonConfigurationFailed
 		}
 	}
