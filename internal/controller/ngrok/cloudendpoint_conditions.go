@@ -63,7 +63,7 @@ func calculateCloudEndpointReadyCondition(clep *ngrokv1alpha1.CloudEndpoint, dom
 	}
 
 	// Overall ready status — all required sub-conditions must be true
-	ready := cloudEndpointCreated && trafficPolicyReady || domainReady
+	ready := cloudEndpointCreated && trafficPolicyReady && domainReady
 
 	// Determine reason and message based on state
 	var reason, message string
@@ -74,8 +74,8 @@ func calculateCloudEndpointReadyCondition(clep *ngrokv1alpha1.CloudEndpoint, dom
 	case !domainReady:
 		// Use the domain's Ready condition reason/message for better context
 		if domainResult != nil && domainResult.ReadyReason != "" {
-			reason = domainResult.ReadyMessage
-			message = domainResult.ReadyReason
+			reason = domainResult.ReadyReason
+			message = domainResult.ReadyMessage
 		} else {
 			reason = ReasonDomainNotReady
 			message = "Domain is not ready"
@@ -88,7 +88,7 @@ func calculateCloudEndpointReadyCondition(clep *ngrokv1alpha1.CloudEndpoint, dom
 		message = trafficPolicyCondition.Message
 	case !cloudEndpointCreated:
 		// If CloudEndpointCreated condition exists and is False, use its reason/message
-		if createdCondition != nil && createdCondition.Status == metav1.ConditionTrue {
+		if createdCondition != nil && createdCondition.Status == metav1.ConditionFalse {
 			reason = createdCondition.Reason
 			message = createdCondition.Message
 		} else {
