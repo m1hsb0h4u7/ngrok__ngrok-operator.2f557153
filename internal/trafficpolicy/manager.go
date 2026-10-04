@@ -133,7 +133,7 @@ func (m *Manager) Resolve(ctx context.Context, ep ngrokv1alpha1.EndpointWithTraf
 	cfg := ep.GetTrafficPolicyCfg()
 	if cfg == nil {
 		meta.RemoveStatusCondition(ep.GetConditions(), ConditionTrafficPolicy)
-		return &Result{Source: SourceInline}, nil
+		return &Result{Source: SourceNone}, nil
 	}
 
 	if !exactlyOneSet(cfg) {
@@ -148,6 +148,7 @@ func (m *Manager) Resolve(ctx context.Context, ep ngrokv1alpha1.EndpointWithTraf
 			m.setCondition(ep, false, ReasonTrafficPolicyError, err.Error())
 			return nil, err
 		}
+		m.clearStaleError(ep)
 		return &Result{Policy: policy, Source: SourceInline}, nil
 
 	case ngrokv1alpha1.TrafficPolicyCfgType_K8sRef:
@@ -157,7 +158,7 @@ func (m *Manager) Resolve(ctx context.Context, ep ngrokv1alpha1.EndpointWithTraf
 			return nil, err
 		}
 		m.clearStaleError(ep)
-		return &Result{Policy: policy, Source: SourceInline}, nil
+		return &Result{Policy: policy, Source: IntendedSource(cfg)}, nil
 
 	default:
 		m.setCondition(ep, false, ReasonTrafficPolicyError, ErrInvalidConfig.Error())
